@@ -9,9 +9,10 @@ router.post('/create', authMiddleware, async (req, res) => {
         const response = await axios.post(`${process.env.USER_SERVICE_URL}/create-user`, req.body);
         res.json(response.data);
     } catch (error) {
-        res.status(res.statusCode === 200 ? 500 : res.statusCode).json({
-            message: error.message
-        });
+        const status = error.response?.status || 500;
+        const message = error.response?.data?.message || error.message || 'Something went wrong';
+
+        res.status(status).json({ message });
     }
 });
 

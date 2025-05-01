@@ -28,6 +28,8 @@ async function connectToRabbitMQWithRetry() {
     return connection;
 }
 
+// ... (previous imports remain the same)
+
 async function connectConsumer() {
     const conn = await connectToRabbitMQWithRetry();
     const channel = await conn.createChannel();
@@ -100,13 +102,42 @@ async function connectConsumer() {
             await txn.save();
 
             console.log(`Transaction ${txn._id} processed and marked as awaited`);
+
+            // Send success response back
+            if (msg.properties.replyTo) {
+                channel.sendToQueue(
+                    msg.properties.replyTo,
+                    Buffer.from(JSON.stringify({
+                        success: true,
+                        data: {
+                            transactionId: txn._id,
+                            status: 'awaited'
+                        }
+                    })),
+                    { correlationId: msg.properties.correlationId }
+                );
+            }
+
             channel.ack(msg);
         } catch (err) {
-            console.error('Transaction failed:', err.message);
+            console.error('Transaction failed:', err?.response?.data?.message);
             if (err.response && err.response.status === 404) {
                 console.error(`404 error occurred at URL: ${err.config.url}`);
             }
-            channel.nack(msg, false, false); // discard message
+
+            // Send error response back
+            if (msg.properties.replyTo) {
+                channel.sendToQueue(
+                    msg.properties.replyTo,
+                    Buffer.from(JSON.stringify({
+                        success: false,
+                        error: err?.response?.data?.message
+                    })),
+                    { correlationId: msg.properties.correlationId }
+                );
+            }
+
+            channel.ack(msg); // Still ack the message since we've handled it
         }
     });
 }

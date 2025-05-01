@@ -7,8 +7,11 @@ router.post('/login', async (req, res) => {
     try {
         const response = await axios.post(`${process.env.AUTH_SERVICE_URL}/login`, req.body);
         res.json(response.data);
-    } catch (err) {
-        res.status(500).json({ error: 'Auth service error' });
+    } catch (error) {
+        const status = error.response?.status || 500;
+        const message = error.response?.data?.message || error.message || 'Something went wrong';
+
+        res.status(status).json({ message });
     }
 });
 

@@ -8,8 +8,11 @@ router.post('/topup', authMiddleware, async (req, res) => {
     try {
         const response = await axios.post(`${process.env.WALLET_URL}/topup`, req.body);
         res.json(response.data);
-    } catch (err) {
-        res.status(500).json({ error: 'Wallet Service Error' });
+    } catch (error) {
+        const status = error.response?.status || 500;
+        const message = error.response?.data?.message || error.message || 'Something went wrong';
+
+        res.status(status).json({ message });
     }
 });
 
