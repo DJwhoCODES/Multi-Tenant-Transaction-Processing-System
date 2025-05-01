@@ -1,0 +1,95 @@
+services:
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "3000:3000"
+    depends_on:
+      - auth-service
+      - user-service
+      - transaction-service
+      - wallet-service
+    networks:
+      - backend
+
+  auth-service:
+    build: ./auth-service
+    ports:
+      - "3001:3001"
+    networks:
+      - backend
+
+  user-service:
+    build: ./user-service
+    ports:
+      - "3002:3002"
+    networks:
+      - backend
+
+  wallet-service:
+    build: ./wallet-service
+    ports:
+      - "3003:3003"
+    networks:
+      - backend
+
+  service-charge-service:
+    build: ./service-charge-service
+    ports:
+      - "3004:3004"
+    networks:
+      - backend
+
+  transaction-service:
+    build: ./transaction-service
+    ports:
+      - "3005:3005"
+    networks:
+      - backend
+
+  queue-service:
+    build: ./queue-service
+    depends_on:
+      - rabbitmq
+      - mongo
+    restart: unless-stopped
+    networks:
+      - backend
+
+  cron-service:
+    build: ./cron-service
+    networks:
+      - backend
+
+  dummy-bank-api:
+    build: ./dummy-bank-api
+    ports:
+      - "3008:3008"
+    networks:
+      - backend
+
+  mongo:
+    image: mongo:6
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - backend
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - backend
+
+volumes:
+  mongo-data:
+
+networks:
+  backend:
+    driver: bridge
